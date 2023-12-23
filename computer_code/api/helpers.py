@@ -67,31 +67,32 @@ class Cameras:
 
     def _camera_read(self):
         frames, _ = self.cameras.read()
+        frames_w = frames.copy()
 
         for i in range(0, self.num_cameras):
-            frames[i] = np.rot90(frames[i], k=self.camera_params[i]["rotation"])
-            frames[i] = make_square(frames[i])
-            frames[i] = cv.undistort(frames[i], self.get_camera_params(i)["intrinsic_matrix"], self.get_camera_params(i)["distortion_coef"])
-            frames[i] = cv.GaussianBlur(frames[i],(9,9),0)
+            frames_w[i] = np.rot90(frames_w[i], k=self.camera_params[i]["rotation"])
+            frames_w[i] = make_square(frames_w[i])
+            frames_w[i] = cv.undistort(frames_w[i], self.get_camera_params(i)["intrinsic_matrix"], self.get_camera_params(i)["distortion_coef"])
+            frames_w[i] = cv.GaussianBlur(frames_w[i],(9,9),0)
             kernel = np.array([[-2,-1,-1,-1,-2],
                                [-1,1,3,1,-1],
                                [-1,3,4,3,-1],
                                [-1,1,3,1,-1],
                                [-2,-1,-1,-1,-2]])
-            frames[i] = cv.filter2D(frames[i], -1, kernel)
-            frames[i] = cv.cvtColor(frames[i], cv.COLOR_RGB2BGR)
+            frames_w[i] = cv.filter2D(frames_w[i], -1, kernel)
+            frames_w[i] = cv.cvtColor(frames_w[i], cv.COLOR_RGB2BGR)
 
         if (self.is_capturing_points):
             image_points = []
             for i in range(0, self.num_cameras):
-                frames[i], single_camera_image_points = self._find_dot(frames[i])
+                frames_w[i], single_camera_image_points = self._find_dot(frames_w[i])
                 image_points.append(single_camera_image_points)
             
             if (any(np.all(point[0] != [None,None]) for point in image_points)):
                 if self.is_capturing_points and not self.is_triangulating_points:
                     self.socketio.emit("image-points", [x[0] for x in image_points])
                 elif self.is_triangulating_points:
-                    errors, object_points, frames = find_point_correspondance_and_object_points(image_points, self.camera_poses, frames)
+                    errors, object_points, frames_w = find_point_correspondance_and_object_points(image_points, self.camera_poses, frames_w)
 
                     # convert to world coordinates
                     for i, object_point in enumerate(object_points):

@@ -18,7 +18,7 @@ import json
 
 serialLock = threading.Lock()
 
-ser = serial.Serial("/dev/cu.usbserial-02X2K2GE", 1000000, write_timeout=1, )
+ser = serial.Serial("/dev/ttyUSB0", 1000000, write_timeout=1, )
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -53,7 +53,7 @@ def camera_stream():
                 time.sleep(last_run_time - time_now + loop_interval)
             last_run_time = time.time()
             frames = cameras.get_frames()
-            jpeg_frame = cv.imencode('.jpg', frames)[1].tostring()
+            jpeg_frame = cv.imencode('.jpg', frames)[1].tobytes()
 
             yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + jpeg_frame + b'\r\n')
